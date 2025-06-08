@@ -429,18 +429,18 @@ def main(page: ft.Page):
                 
                 # Atualiza as opções do jogador 2 com os usuários disponíveis, excluindo o jogador 1 selecionado
                 Player_2.options = [ft.dropdown.Option("Player 2")] + [ft.dropdown.Option(user) for user in users["Username"].values if Player_1.value != user]
-        
+
         # Verifica se a página de ranking detalhado está ativa
         elif page_RankingDetalhado:
             page.add(ft.Row(controls = [left_screen, RankingDetalhado(page)], expand = True)) # Adiciona a tela esquerda e a página de ranking detalhado à página
-        
+
         # Verifica se a página de cadastro de jogadores está ativa
         else:
             page.add(ft.Row(controls = [left_screen, Signup(page)], expand = True)) # Adiciona a tela esquerda e a página de cadastro de jogadores à página
         
-        
         page.update() # Atualiza a página para refletir as mudanças feitas
-    
+
+
     # Conteúdo a esquerda do App
     left_screen = ft.Container(
             content = ft.Column(
@@ -655,7 +655,7 @@ def main(page: ft.Page):
                                         
                                         # Dropdown para selecionar a quantidade de sets
                                         Sets := ft.Dropdown(
-                                            value = '1', # Valor inicial do dropdown
+                                            value = '3', # Valor inicial do dropdown
                                             # Opções do dropdown para a quantidade de sets
                                             options = [ft.dropdown.Option(1), ft.dropdown.Option(3), ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(9)],
                                             color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
