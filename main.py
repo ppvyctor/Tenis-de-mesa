@@ -1,5 +1,6 @@
 import pandas as pd # Importa a biblioteca pandas para manipulação de dados
 import flet as ft # Importa a biblioteca flet para criação do App
+from DataBase import DataBase # Importa a classe Ranking do arquivo Ranking.py
 from RankingDetalhado import RankingDetalhado # Importa a classe RankingDetalhado do arquivo RankingDetalhado.py
 from Signup import Signup # Importa a função mainLogin do arquivo mainLogin.py
 from Game import game # Importa a função game para contagem dos pontos
@@ -20,6 +21,9 @@ def main(page: ft.Page):
 
     player_1_Code = True # Variável para controlar se o jogador 1 está definido e pronto para jogar
     player_2_Code = True # Variável para controlar se o jogador 2 está definido e pronto para jogar
+    
+    
+    dataBase = DataBase() # Cria uma instância da classe DataBase para manipulação do banco de dados
 
 
     def change_Theme() -> None:
@@ -436,267 +440,283 @@ def main(page: ft.Page):
 
         # Verifica se a página de cadastro de jogadores está ativa
         else:
-            page.add(ft.Row(controls = [left_screen, Signup(page)], expand = True)) # Adiciona a tela esquerda e a página de cadastro de jogadores à página
+            
+            page.add(ft.Row(controls = [left_screen, Signup(page, dataBase)], expand = True)) # Adiciona a tela esquerda e a página de cadastro de jogadores à página
         
         page.update() # Atualiza a página para refletir as mudanças feitas
 
 
-    # Conteúdo a esquerda do App
-    left_screen = ft.Container(
-            content = ft.Column(
-                controls = [
-                    ft.Column(
-                        controls = [
-                            ft.IconButton(
-                                icon = ft.Icons.MENU, # Ícone do botão de menu
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de menu
-                                icon_size = 45, # Tamanho do ícone do botão de menu
-                                height = 50, # Altura do botão de menu
-                                alignment = ft.alignment.center # Alinhamento do botão de menu
-                            ),
-                            
-                            # Botão de ir para a página inicial
-                            ft.IconButton(
-                                tooltip = "Página Inicial", # Tooltip do botão de página inicial
-                                icon = ft.Icons.SPORTS_ESPORTS, # Ícone do botão de página inicial
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de página inicial
-                                icon_size = 35, # Tamanho do ícone do botão de página inicial
-                                height = 50, # Altura do botão de página inicial
-                                alignment = ft.alignment.center, # Alinhamento do botão de página inicial
-                                on_click = lambda e: go_To_Home() # Ação do botão para voltar à página inicial
-                            ),
-                            
-                            # Botão de ir para a página de ranking detalhado
-                            ft.IconButton(
-                                tooltip = "Cadastrar", # Tooltip do botão de cadastro
-                                icon = ft.Icons.PERSON_ADD, # Ícone do botão de cadastro
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de cadastro
-                                icon_size = 35, # Tamanho do ícone do botão de cadastro
-                                height = 50, # Altura do botão de cadastro
-                                alignment = ft.alignment.center, # Alinhamento do botão de cadastro
-                                on_click = lambda e: runSignup() # Ação do botão para ir para a página de cadastro de jogadores
-                            ),
-                            
-                            # Botão de remover jogador
-                            ft.IconButton(
-                                tooltip = "Remover Jogador",
-                                icon = ft.Icons.PERSON_REMOVE,
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, 
-                                icon_size = 35,
-                                height = 50,
-                                alignment = ft.alignment.center
-                                #on_click = lambda e: runSignup()
-                            ),
-
-                            # Botão de ir para a página de ranking detalhado
-                            ft.IconButton(
-                                tooltip = "Ranking Completo dos Jogadores", # Tooltip do botão de ranking
-                                icon = ft.Icons.EMOJI_EVENTS, # Ícone do botão de ranking
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de ranking
-                                icon_size = 35, # Tamanho do ícone do botão de ranking
-                                on_click = lambda e: go_To_RankingDetalhado(), # Ação do botão para ir para a página de ranking detalhado
-                                height = 50, # Altura do botão de ranking
-                                alignment = ft.alignment.center # Alinhamento do botão de ranking
-                            )
-                        ]
-                    ),
-                    
-                    ft.Column(
-                        controls = [
-                            # Botão de ir para a página de ranking geral
-                            ft.IconButton(
-                                tooltip = "Mudar tema", # Tooltip do botão de mudança de tema
-                                icon = ft.Icons.BRIGHTNESS_6, # Ícone do botão de mudança de tema
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de mudança de tema
-                                icon_size = 25, # Tamanho do ícone do botão de mudança de tema
-                                on_click = lambda e: change_Theme(), # Ação do botão para mudar o tema do App
-                                height = 50, # Altura do botão de mudança de tema
-                                alignment = ft.alignment.center # Alinhamento do botão de mudança de tema
-                            ),
-                            
-                            # Botão de sair do App
-                            ft.IconButton(
-                                tooltip = "Sair", # Tooltip do botão de sair
-                                icon = ft.Icons.EXIT_TO_APP, # Ícone do botão de sair
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de sair
-                                icon_size = 25, # Tamanho do ícone do botão de sair
-                                on_click = lambda e: page.window.close(), # Ação do botão para fechar o App
-                                height = 50, # Altura do botão de sair
-                                alignment = ft.alignment.center # Alinhamento do botão de sair
-                            )
-                        ]
-                    )
-                ],
-                alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Alinhamento dos controles na coluna
-            ),
-            width = 50 # Largura da tela esquerda do App
-        )
-    
-    # Conteúdo a direita do App
-    if not os.path.exists("Users"): os.makedirs("Users")
-    
-    try:
-        users = pd.read_excel("Users/users.xlsx") # Tenta ler o arquivo Excel com os usuários
-    
-    except:
-        users = pd.DataFrame(columns=["Username", "Password", "Wins", "Defeats", "Scores"]) # Se não conseguir ler o arquivo, cria um DataFrame vazio com as colunas especificadas
-        users.to_excel("Users/users.xlsx", index = False) # Salva o DataFrame vazio como "Users/users.xlsx"
-    
-    users = users.sort_values('Username', ascending = True, key = lambda user: user.str.lower()).reset_index(drop = True) # Ordena os usuários pelo nome em ordem alfabética
-    
-    # Tela direita do App com os controles de seleção de jogadores e configurações da partida
-    right_screen = ft.Container(
-        content = ft.Column(
-            controls = [
-                ft.Row(
+    if dataBase.verify_connection():
+        # Conteúdo a esquerda do App
+        left_screen = ft.Container(
+                content = ft.Column(
                     controls = [
                         ft.Column(
                             controls = [
-                                ft.Column(
-                                    controls = [
-                                        ft.Column(
-                                            controls = [
-                                                ft.Text(
-                                                    "Escolha o primeiro jogador abaixo:", # Texto de instrução para escolher o primeiro jogador
-                                                    size = 15 # Tamanho do texto
-                                                ),
-                                                
-                                                # Dropdown para selecionar o primeiro jogador
-                                                Player_1 := ft.Dropdown(
-                                                    value = "Player 1", # Valor inicial do dropdown
-                                                    # Opções do dropdown, começando com "Player 1"
-                                                    options = [ 
-                                                        ft.dropdown.Option("Player 1")
-                                                    ] + [ft.dropdown.Option(user) for user in users["Username"].values],
-                                                    menu_height = 300, # Altura do menu do dropdown
-                                                    color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                    fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                    text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                    on_change = lambda e: change_player_2(), # 
-                                                    width = 400, # Largura do dropdown
-                                                    enable_filter = True, # Permite filtrar as opções do dropdown
-                                                    editable = True # Permite editar o valor do dropdown
-                                                )
-                                            ]
-                                        ),
-                                        
-                                        ft.Column(
-                                            controls = [
-                                                # Texto de instrução para escolher o segundo jogador
-                                                ft.Text(
-                                                    "Escolha o segundo jogador abaixo:", # Texto de instrução para escolher o segundo jogador
-                                                    size = 15 # Tamanho do texto
-                                                ),
-                                                
-                                                # Dropdown para selecionar o segundo jogador
-                                                Player_2 := ft.Dropdown(
-                                                    value = "Player 2", # Valor inicial do dropdown
-                                                    # Opções do dropdown, começando com "Player 2"
-                                                    options = [
-                                                        ft.dropdown.Option("Player 2")
-                                                    ] + [ft.dropdown.Option(user) for user in users["Username"].values],
-                                                    
-                                                    menu_height = 300, # Altura do menu do dropdown
-                                                    color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                    fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                    text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                    on_change = lambda e: change_player_1(), # Ação a ser executada quando o valor do dropdown mudar
-                                                    width = 400, # Largura do dropdown
-                                                    enable_filter = True, # Permite filtrar as opções do dropdown
-                                                    editable = True # Permite editar o valor do dropdown
-                                                )
-                                            ]
-                                        )
-                                    ],
-
-                                    alignment = ft.MainAxisAlignment.CENTER, # Alinhamento dos controles na coluna
-                                    spacing = 50 # Espaçamento entre os controles na coluna
-                                )
-                            ],
-                            horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                            alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da coluna
-                            spacing = 30 # Espaçamento entre os controles na coluna
-                        ),
-
-
-                        ft.Column(
-                            controls = [
-                                ft.Column(
-                                    controls = [
-                                        # Texto de instrução para escolher os pontos necessários para vencer um set
-                                        ft.Text(
-                                            "Pontos por sets:", # Texto de instrução para escolher os pontos necessários para vencer um set
-                                            size = 15 # Tamanho do texto
-                                        ),
-                                        
-                                        # Dropdown para selecionar os pontos necessários para vencer um set
-                                        Points_To_Win := ft.Dropdown(
-                                            value = '11', # Valor inicial do dropdown
-                                            # Opções do dropdown para os pontos necessários para vencer um set
-                                            options = [ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(11), ft.dropdown.Option(21)],
-                                            color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                            fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                            text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                            width = 200 # Largura do dropdown
-                                        )
-                                    ],
-                                    horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                    alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
+                                ft.IconButton(
+                                    icon = ft.Icons.MENU, # Ícone do botão de menu
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de menu
+                                    icon_size = 45, # Tamanho do ícone do botão de menu
+                                    height = 50, # Altura do botão de menu
+                                    alignment = ft.alignment.center # Alinhamento do botão de menu
                                 ),
                                 
+                                # Botão de ir para a página inicial
+                                ft.IconButton(
+                                    tooltip = "Página Inicial", # Tooltip do botão de página inicial
+                                    icon = ft.Icons.SPORTS_ESPORTS, # Ícone do botão de página inicial
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de página inicial
+                                    icon_size = 35, # Tamanho do ícone do botão de página inicial
+                                    height = 50, # Altura do botão de página inicial
+                                    alignment = ft.alignment.center, # Alinhamento do botão de página inicial
+                                    on_click = lambda e: go_To_Home() # Ação do botão para voltar à página inicial
+                                ),
                                 
-                                ft.Column(
-                                    controls = [
-                                        # Texto de instrução para escolher a quantidade de sets
-                                        ft.Text(
-                                            "Quantidade de sets:", # Texto de instrução para escolher a quantidade de sets
-                                            size = 15 # Tamanho do texto
-                                        ),
-                                        
-                                        # Dropdown para selecionar a quantidade de sets
-                                        Sets := ft.Dropdown(
-                                            value = '3', # Valor inicial do dropdown
-                                            # Opções do dropdown para a quantidade de sets
-                                            options = [ft.dropdown.Option(1), ft.dropdown.Option(3), ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(9)],
-                                            color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                            fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                            text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                            width = 200 # Largura do dropdown
-                                        )
-                                    ],
-                                    horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                    alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
-                                )
-                            ],
+                                # Botão de ir para a página de ranking detalhado
+                                ft.IconButton(
+                                    tooltip = "Cadastrar", # Tooltip do botão de cadastro
+                                    icon = ft.Icons.PERSON_ADD, # Ícone do botão de cadastro
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de cadastro
+                                    icon_size = 35, # Tamanho do ícone do botão de cadastro
+                                    height = 50, # Altura do botão de cadastro
+                                    alignment = ft.alignment.center, # Alinhamento do botão de cadastro
+                                    on_click = lambda e: runSignup() # Ação do botão para ir para a página de cadastro de jogadores
+                                ),
+                                
+                                # Botão de remover jogador
+                                ft.IconButton(
+                                    tooltip = "Remover Jogador",
+                                    icon = ft.Icons.PERSON_REMOVE,
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, 
+                                    icon_size = 35,
+                                    height = 50,
+                                    alignment = ft.alignment.center
+                                    #on_click = lambda e: runSignup()
+                                ),
 
-                            horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                            alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
+                                # Botão de ir para a página de ranking detalhado
+                                ft.IconButton(
+                                    tooltip = "Ranking Completo dos Jogadores", # Tooltip do botão de ranking
+                                    icon = ft.Icons.EMOJI_EVENTS, # Ícone do botão de ranking
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de ranking
+                                    icon_size = 35, # Tamanho do ícone do botão de ranking
+                                    on_click = lambda e: go_To_RankingDetalhado(), # Ação do botão para ir para a página de ranking detalhado
+                                    height = 50, # Altura do botão de ranking
+                                    alignment = ft.alignment.center # Alinhamento do botão de ranking
+                                )
+                            ]
+                        ),
+                        
+                        ft.Column(
+                            controls = [
+                                # Botão de ir para a página de ranking geral
+                                ft.IconButton(
+                                    tooltip = "Mudar tema", # Tooltip do botão de mudança de tema
+                                    icon = ft.Icons.BRIGHTNESS_6, # Ícone do botão de mudança de tema
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de mudança de tema
+                                    icon_size = 25, # Tamanho do ícone do botão de mudança de tema
+                                    on_click = lambda e: change_Theme(), # Ação do botão para mudar o tema do App
+                                    height = 50, # Altura do botão de mudança de tema
+                                    alignment = ft.alignment.center # Alinhamento do botão de mudança de tema
+                                ),
+                                
+                                # Botão de sair do App
+                                ft.IconButton(
+                                    tooltip = "Sair", # Tooltip do botão de sair
+                                    icon = ft.Icons.EXIT_TO_APP, # Ícone do botão de sair
+                                    icon_color = ft.Colors.ON_SURFACE_VARIANT, # Cor do ícone do botão de sair
+                                    icon_size = 25, # Tamanho do ícone do botão de sair
+                                    on_click = lambda e: page.window.close(), # Ação do botão para fechar o App
+                                    height = 50, # Altura do botão de sair
+                                    alignment = ft.alignment.center # Alinhamento do botão de sair
+                                )
+                            ]
                         )
                     ],
-                    alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da linha
-                    spacing = 150 # Espaçamento entre os controles na linha
+                    alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Alinhamento dos controles na coluna
                 ),
-                
-                
-                # Botão flutuante para iniciar a partida
-                ft.FloatingActionButton(
-                    content = ft.Text("Iniciar Partida", size = 20, color = ft.Colors.WHITE), # Conteúdo do botão flutuante
-                    icon = ft.Icons.PLAY_ARROW, # Ícone do botão flutuante
-                    width = 400, # Largura do botão flutuante
-                    height = 50, # Altura do botão flutuante
-                    bgcolor = ft.Colors.GREEN, # Cor de fundo do botão flutuante
-                    on_click = lambda e: go_To_Game() # Ação do botão flutuante para iniciar a partida
-                )
-            ],
-            horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-            alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da coluna
-            spacing = 100 # Espaçamento entre os controles na coluna
-        ),
-        # height = 700,
-        expand = True # Expande a tela direita para ocupar todo o espaço disponível
-    )
+                width = 50 # Largura da tela esquerda do App
+            )
+        
+        # Conteúdo a direita do App
+        if not os.path.exists("Users"): os.makedirs("Users")
+        
+        try:
+            users = pd.read_excel("Users/users.xlsx") # Tenta ler o arquivo Excel com os usuários
+        
+        except:
+            users = pd.DataFrame(columns=["Username", "Password", "Wins", "Defeats", "Scores"]) # Se não conseguir ler o arquivo, cria um DataFrame vazio com as colunas especificadas
+            users.to_excel("Users/users.xlsx", index = False) # Salva o DataFrame vazio como "Users/users.xlsx"
+        
+        users = users.sort_values('Username', ascending = True, key = lambda user: user.str.lower()).reset_index(drop = True) # Ordena os usuários pelo nome em ordem alfabética
+        
+        # Tela direita do App com os controles de seleção de jogadores e configurações da partida
+        right_screen = ft.Container(
+            content = ft.Column(
+                controls = [
+                    ft.Row(
+                        controls = [
+                            ft.Column(
+                                controls = [
+                                    ft.Column(
+                                        controls = [
+                                            ft.Column(
+                                                controls = [
+                                                    ft.Text(
+                                                        "Escolha o primeiro jogador abaixo:", # Texto de instrução para escolher o primeiro jogador
+                                                        size = 15 # Tamanho do texto
+                                                    ),
+                                                    
+                                                    # Dropdown para selecionar o primeiro jogador
+                                                    Player_1 := ft.Dropdown(
+                                                        value = "Player 1", # Valor inicial do dropdown
+                                                        # Opções do dropdown, começando com "Player 1"
+                                                        options = [ 
+                                                            ft.dropdown.Option("Player 1")
+                                                        ] + [ft.dropdown.Option(user) for user in users["Username"].values],
+                                                        menu_height = 300, # Altura do menu do dropdown
+                                                        color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
+                                                        fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
+                                                        text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
+                                                        on_change = lambda e: change_player_2(), # 
+                                                        width = 400, # Largura do dropdown
+                                                        enable_filter = True, # Permite filtrar as opções do dropdown
+                                                        editable = True # Permite editar o valor do dropdown
+                                                    )
+                                                ]
+                                            ),
+                                            
+                                            ft.Column(
+                                                controls = [
+                                                    # Texto de instrução para escolher o segundo jogador
+                                                    ft.Text(
+                                                        "Escolha o segundo jogador abaixo:", # Texto de instrução para escolher o segundo jogador
+                                                        size = 15 # Tamanho do texto
+                                                    ),
+                                                    
+                                                    # Dropdown para selecionar o segundo jogador
+                                                    Player_2 := ft.Dropdown(
+                                                        value = "Player 2", # Valor inicial do dropdown
+                                                        # Opções do dropdown, começando com "Player 2"
+                                                        options = [
+                                                            ft.dropdown.Option("Player 2")
+                                                        ] + [ft.dropdown.Option(user) for user in users["Username"].values],
+                                                        
+                                                        menu_height = 300, # Altura do menu do dropdown
+                                                        color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
+                                                        fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
+                                                        text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
+                                                        on_change = lambda e: change_player_1(), # Ação a ser executada quando o valor do dropdown mudar
+                                                        width = 400, # Largura do dropdown
+                                                        enable_filter = True, # Permite filtrar as opções do dropdown
+                                                        editable = True # Permite editar o valor do dropdown
+                                                    )
+                                                ]
+                                            )
+                                        ],
+
+                                        alignment = ft.MainAxisAlignment.CENTER, # Alinhamento dos controles na coluna
+                                        spacing = 50 # Espaçamento entre os controles na coluna
+                                    )
+                                ],
+                                horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
+                                alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da coluna
+                                spacing = 30 # Espaçamento entre os controles na coluna
+                            ),
+
+
+                            ft.Column(
+                                controls = [
+                                    ft.Column(
+                                        controls = [
+                                            # Texto de instrução para escolher os pontos necessários para vencer um set
+                                            ft.Text(
+                                                "Pontos por sets:", # Texto de instrução para escolher os pontos necessários para vencer um set
+                                                size = 15 # Tamanho do texto
+                                            ),
+                                            
+                                            # Dropdown para selecionar os pontos necessários para vencer um set
+                                            Points_To_Win := ft.Dropdown(
+                                                value = '11', # Valor inicial do dropdown
+                                                # Opções do dropdown para os pontos necessários para vencer um set
+                                                options = [ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(11), ft.dropdown.Option(21)],
+                                                color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
+                                                fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
+                                                text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
+                                                width = 200 # Largura do dropdown
+                                            )
+                                        ],
+                                        horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
+                                        alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
+                                    ),
+                                    
+                                    
+                                    ft.Column(
+                                        controls = [
+                                            # Texto de instrução para escolher a quantidade de sets
+                                            ft.Text(
+                                                "Quantidade de sets:", # Texto de instrução para escolher a quantidade de sets
+                                                size = 15 # Tamanho do texto
+                                            ),
+                                            
+                                            # Dropdown para selecionar a quantidade de sets
+                                            Sets := ft.Dropdown(
+                                                value = '3', # Valor inicial do dropdown
+                                                # Opções do dropdown para a quantidade de sets
+                                                options = [ft.dropdown.Option(1), ft.dropdown.Option(3), ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(9)],
+                                                color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
+                                                fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
+                                                text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
+                                                width = 200 # Largura do dropdown
+                                            )
+                                        ],
+                                        horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
+                                        alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
+                                    )
+                                ],
+
+                                horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
+                                alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
+                            )
+                        ],
+                        alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da linha
+                        spacing = 150 # Espaçamento entre os controles na linha
+                    ),
+                    
+                    
+                    # Botão flutuante para iniciar a partida
+                    ft.FloatingActionButton(
+                        content = ft.Text("Iniciar Partida", size = 20, color = ft.Colors.WHITE), # Conteúdo do botão flutuante
+                        icon = ft.Icons.PLAY_ARROW, # Ícone do botão flutuante
+                        width = 400, # Largura do botão flutuante
+                        height = 50, # Altura do botão flutuante
+                        bgcolor = ft.Colors.GREEN, # Cor de fundo do botão flutuante
+                        on_click = lambda e: go_To_Game() # Ação do botão flutuante para iniciar a partida
+                    )
+                ],
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
+                alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da coluna
+                spacing = 100 # Espaçamento entre os controles na coluna
+            ),
+            # height = 700,
+            expand = True # Expande a tela direita para ocupar todo o espaço disponível
+        )
+        
+        update_layout() # Atualiza o layout da página do App
     
-    update_layout() # Atualiza o layout da página do App
+    else:
+        page.add(
+            ft.Container(
+                content = ft.Text(
+                    "Erro ao conectar ao banco de dados! 😥", # Mensagem de erro ao conectar ao banco de dados
+                    size = 30, # Tamanho do texto
+                    weight = ft.FontWeight.BOLD, # Peso do texto
+                ),
+                alignment = ft.alignment.center, # Alinhamento do texto no centro
+                expand = True # Expande o container para ocupar todo o espaço disponível
+            )
+        )
+        page.update()
 
 
 if __name__ == "__main__":

@@ -1,22 +1,11 @@
 import flet as ft
 import pandas as pd
+from DataBase import DataBase # Importando a classe DataBase para manipulação do DataBase
 import os
 
-def get_DataFrame() -> pd.DataFrame:
-    if not os.path.exists("Users"): os.makedirs("Users")
-    
-    
-    try:
-        users = pd.read_excel('Users\\users.xlsx') # Tentando Ler a base de dado dos usuários
-        
-    except FileNotFoundError: # Caso o arquivo não seja encontrado
-        users = pd.DataFrame(columns=['Username', 'Password', 'Wins', 'Defeats', 'Scores']) # Cria um DataFrame vazio
-        
-        users.to_excel('Users\\users.xlsx', index=False) # Salva o DataFrame como um arquivo Excel
-    
-    return users
 
-def Signup(page: ft.Page) -> ft.Column:
+
+def Signup(page: ft.Page, dataBase: DataBase) -> ft.Column:
     Accound_Confirmation = False
     Container_SignUp = ft.Ref[ft.Column]()
     
@@ -24,7 +13,7 @@ def Signup(page: ft.Page) -> ft.Column:
     def Accound_Verification() -> None:
         nonlocal Accound_Confirmation
         
-        users = get_DataFrame()
+        users = dataBase.get_DataBase("SELECT * FROM atleta") # Obtém o DataFrame com os usuários cadastrados
         
         TextField_Username.error = False
         TextField_Username.error_text = ""
@@ -118,7 +107,7 @@ def Signup(page: ft.Page) -> ft.Column:
         nonlocal Container_SignUp, Accound_Confirmation, TextField_Confirm_New_Password
         
         if Accound_Confirmation:
-            users = get_DataFrame()
+            users = dataBase.get_DataBase("SELECT * FROM atleta") # Obtém o DataFrame com os usuários cadastrados
             
             users = pd.concat(
                 [
@@ -196,10 +185,9 @@ def Signup(page: ft.Page) -> ft.Column:
             TextField_Confirm_New_Password.value = ''
             TextField_ADM_Code.value = ''
             
-            page.update()
-            
             
         else:
+            dataCountry = dataBase.get_DataBase("SELECT * FROM \"país\"") # Obtém o DataFrame com os países cadastrados
             Container_SignUp.current.controls.clear()
             Container_SignUp.current.controls.append(
                 ft.Container(
@@ -212,7 +200,25 @@ def Signup(page: ft.Page) -> ft.Column:
                                 color = ft.Colors.BLACK
                             ),
                             
-                            TextField_Username,
+                            ft.Row(
+                                controls = [
+                                    TextField_Username,
+                                    country := ft.Dropdown(
+                                        label = "País de Representação:",
+                                        hint_text = "Selecione seu país",
+                                        options = [
+                                            ft.dropdown.Option(
+                                                key = dataCountry.iloc[row, 0],
+                                                text = dataCountry.iloc[row, 1],
+                                            ) for row in range(dataCountry.shape[0])
+                                        ],
+                                        enable_search = True,
+                                        editable = True,
+                                        menu_height = 300
+                                    )
+                                ],
+                                expand= True,
+                            ),
                             TextField_New_Password,
                             TextField_Confirm_New_Password,
                             TextField_ADM_Code,
@@ -268,6 +274,7 @@ def Signup(page: ft.Page) -> ft.Column:
                             color = ft.Colors.BLACK
                         ),
                         
+                        
                         TextField_Username := ft.TextField(
                             label = "Nickname: ",
                             hint_text = "Digite seu nickname",
@@ -283,7 +290,8 @@ def Signup(page: ft.Page) -> ft.Column:
                             on_submit = lambda e: UsernameOn_Autofocus_Next(),
                             autofocus = True
                         ),
-                        
+
+
                         TextField_New_Password := ft.TextField(
                             label = "Senha: ",
                             hint_text = "Digite sua Senha",
@@ -358,6 +366,7 @@ def Signup(page: ft.Page) -> ft.Column:
         alignment = ft.MainAxisAlignment.CENTER,
         horizontal_alignment = ft.CrossAxisAlignment.CENTER
     )
+    
     
     update_layout()
     

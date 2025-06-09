@@ -2,7 +2,7 @@ import flet as ft # Import a biblioteca Flet para criar do App
 import re
 import regex # Import a biblioteca Regex para fazer expressões regulares
 import numpy as np # Import a biblioteca pandas para manipulação de dados
-from Ranking import Ranking 
+from DataBase import DataBase 
 
 
 def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
@@ -13,7 +13,7 @@ def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
     page.window.center() # Colocando a página no centro da tela'''
     
     
-    if not Ranking().users.empty: # Se a base de dados não estiver vazia
+    if not DataBase().users.empty: # Se a base de dados não estiver vazia
         def search_Player(): # Função para pesquisar o jogador
             nonlocal up_Page # Dizendo que queremos modificar a variável up_Page que está fora da função
             up_Page.error = False
@@ -42,7 +42,7 @@ def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
             
             nonlocal list_DataTable # Dizendo que queremos modificar a variável list_DataTable que está fora da função
             
-            users = Ranking().users # Pega a base de dados dos usuários da classe Ranking
+            users = DataBase().users # Pega a base de dados dos usuários da classe Ranking
             
             '''Colocando os valores de derrota como negativo para que, em casos de empates, o jogador não se beneficie pela sua quantidade de derrotas.'''
             users["Defeats"] *= -1 
