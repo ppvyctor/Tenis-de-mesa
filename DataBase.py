@@ -32,17 +32,24 @@ class DataBase: # Classe para manipulação do DataBase
             self.conection = False
             
     
-    def insert_Player(self, database_Name: str, Columns: str, datas: tuple) -> None:
+    def insert_Player(self, tabela_Name: str, Columns: str, datas: tuple) -> None:
         '''Insere um novo jogador no banco de dados.'''
 
         placeholders = ', '.join(['%s'] * len(datas))
-        command = f"INSERT INTO {database_Name} {Columns} VALUES ({placeholders})"
+        command = f"INSERT INTO {tabela_Name} {Columns} VALUES ({placeholders})"
         
-        with self.engine.raw_connection() as conn:
-            with conn.cursor() as cursor:
+        conn = self.engine.raw_connection()
+        try:
+            cursor = conn.cursor()
+            try:
                 cursor.execute(command, datas)
+            finally:
+                cursor.close()
             conn.commit()
-        
+        finally:
+            conn.close()
+    
+    
 
     def get_DataBase(self, Command: str) -> pd.DataFrame:
         return pd.read_sql(Command, self.engine)
