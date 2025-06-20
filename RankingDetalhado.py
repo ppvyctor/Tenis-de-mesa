@@ -20,7 +20,7 @@ def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
                     color= ft.Colors.BLACK,
                     options = [
                         ft.dropdown.Option(key, name)
-                        for key, name in tournament[['id', 'nome'].values.tolist()]
+                        for key, name in tournament[['id', 'nome']].values.tolist()
                     ],
                     editable = True,
                     enable_filter = True
