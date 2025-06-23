@@ -9,6 +9,9 @@ def main(page: ft.Page):
     # Configurações gerais do App
     page.title = 'Tênis de Mesa' # Define o título do App
     page.theme_mode = ft.ThemeMode.SYSTEM # Definindo tema escuro
+    
+    page.theme_mode = ft.ThemeMode.DARK if page.platform_brightness == ft.Brightness.DARK else ft.ThemeMode.LIGHT # Define o tema do App com base no brilho da plataforma
+    
     #page.window.full_screen = True # Define o App para tela cheia
     page.window.maximized = True
     page.window.icon = 'Icon/ping-pong.png' # Caminho do ícone do App
@@ -18,9 +21,17 @@ def main(page: ft.Page):
     page_RankingDetalhado = False # Variável para controlar a página de ranking detalhado
     page_Game = False # Variável para controlar a página do jogo
 
-    player_1_Code = True # Variável para controlar se o jogador 1 está definido e pronto para jogar
-    player_2_Code = True # Variável para controlar se o jogador 2 está definido e pronto para jogar
+    player_1_Code = False # Variável para controlar se o jogador 1 está definido e pronto para jogar
+    player_2_Code = False # Variável para controlar se o jogador 2 está definido e pronto para jogar
 
+    Points_To_Win = 0
+    Sets = 0
+    
+    Player_1 = ''
+    Player_2 = ''
+    
+    Player_1_Password = ''
+    Player_2_Password = ''
 
     dataBase = DataBase() # Cria uma instância da classe DataBase para manipulação do banco de dados
 
@@ -95,213 +106,160 @@ def main(page: ft.Page):
         update_layout() # Chama a função update_layout para atualizar o layout da página
 
 
-    def confirme_Player_2(password: ft.TextField, alertDialog: ft.AlertDialog) -> None:
-        '''Função usada para confirmar a senha do jogador 2. Isso serve como uma verificação de segurança para garantir que o jogador 2 é quem diz ser.'''
+    def password_Confirmation(database: pd.DataFrame, alert: ft.AlertDialog) -> None:
+        nonlocal Player_1_Password, Player_2_Password, player_1_Code, player_2_Code
+
+        Player_1_Password.error = False
+        Player_1_Password.error_text = ''
         
-        '''A palavra-chave nonlocal é usada para indicar que uma variável definida em um escopo externo (mas não global) será modificada dentro de uma função interna. 
-        Ela permite alterar o valor de variáveis de funções envolventes sem precisar passá-las como parâmetro.'''
-        nonlocal player_2_Code, Player_2, users
-
-        password.error = False # Reseta o erro do campo de senha
-        password.error_text = "" # Reseta o texto de erro do campo de senha
-        player_2_Code = False # Reseta o código do jogador 2 para falso, indicando que ele ainda não está definido corretamente
+        Player_2_Password.error = False
+        Player_2_Password.error_text = ''
 
 
-        # Verifica se o campo de senha está vazio
-        if password.value == '':
-            password.error = True # Ativar o designe de erro do campo de senha
-            password.error_text = "Campo obrigatório" # Define o texto de erro do campo de senha
-
-            player_2_Code = False # Define o código do jogador 2 como falso, indicando que ele ainda não está definido corretamente
-
-
-        # Verifica se a senha digitada é igual à senha do jogador 2 no DataFrame users
-        elif password.value != str(users.loc[users["nome_completo"] == Player_2.value, "senha"].values[0]):
-            password.error = True # Ativar o designe de erro do campo de senha
-            password.error_text = "Senha incorreta" # Define o texto de erro do campo de senha
-            Player_2.value = "Player 2" # Reseta o valor do campo de seleção do jogador 2 para "Player 2"
-
-            player_2_Code = False# Define o código do jogador 2 como falso, indicando que ele ainda não está definido corretamente
-
+        if Player_1_Password.value == '':
+            Player_1_Password.error = True
+            Player_1_Password.error_text = 'Senha não pode ser vazia!' # Verifica se a senha do jogador 1 está vazia
         
-        # Se a senha digitada for igual à senha do jogador 2 no DataFrame users e não for vazia
-        else:
-            player_2_Code = True # Define o código do jogador 2 como verdadeiro, indicando que ele está definido corretamente
+        elif Player_1_Password.value != database.loc[database["id"] == int(chosen_players.value), "senha"].values[0]:
+            Player_1_Password.error = True
+            Player_1_Password.error_text = 'Senha incorreta!' # Verifica se a senha do jogador 1 está incorreta
+        
+        Player_1_Password.update()
 
-            page.close(alertDialog) # Fecha o diálogo de confirmação de senha
 
-            # Cria um novo diálogo de alerta para informar que a senha está correta
-            alertDialog = ft.AlertDialog(
-                title = ft.Text("Senha Correta!"),
-                content = ft.Text("Jogador 2 Já está definido!"),
-                actions = [
-                    ft.TextButton("Fechar", on_click=lambda e: page.close(alertDialog))
-                ]
-            )
+        if Player_2_Password.value == '':
+            Player_2_Password.error = True
+            Player_2_Password.error_text = 'Senha não pode ser vazia!' # Verifica se a senha do jogador 2 está vazia
+        
+        elif Player_2_Password.value != database.loc[database["id"] == int(chosen_players.value), "senha"].values[1]:
+            Player_2_Password.error = True
+            Player_2_Password.error_text = 'Senha incorreta!' # Verifica se a senha do jogador 2 está incorreta
+        
+        Player_2_Password.update()
+
+
+        if not Player_1_Password.error and not Player_2_Password.error: # Verifica se há erros nas senhas dos jogadores
+            player_1_Code = True
+            player_2_Code = True
             
-            page.open(alertDialog) # Abre o diálogo de alerta para informar que a senha está correta
-        
-        password.update() # Atualiza o campo de senha para refletir as mudanças feitas independente do que aconteceu
-        
-        
-    def confirme_Player_1(password: ft.TextField, alertDialog: ft.AlertDialog) -> None:
-        '''Função usada para confirmar a senha do jogador 1. Isso serve como uma verificação de segurança para garantir que o jogador 1 é quem diz ser.'''
+            alert.title = "Senhas estão corretas!"
+            alert.message = "As senhas estão corretas, feche a tela e inicie a partida!" # Mensagem de confirmação de senha correta
+            alert.actions = []
+            alert.update()
 
-
-        '''A palavra-chave nonlocal é usada para indicar que uma variável definida em um escopo externo (mas não global) será modificada dentro de uma função interna. 
-        Ela permite alterar o valor de variáveis de funções envolventes sem precisar passá-las como parâmetro.'''
-        nonlocal player_1_Code, Player_1, users
-
-        password.error = False # Reseta o erro do campo de senha
-        password.error_text = "" # Reseta o texto de erro do campo de senha
-        player_1_Code = False # Reseta o código do jogador 1 para falso, indicando que ele ainda não está definido corretamente
-
-
-        # Verifica se o campo de senha está vazio
-        if password.value == '':
-            password.error = True # Ativar o designe de erro do campo de senha
-            password.error_text = "Campo obrigatório" # 
-            
-            player_1_Code = False # Define o código do jogador 1 como falso, indicando que ele ainda não está definido corretamente
+    def set_Players(database: pd.DataFrame) -> None:
+        nonlocal Player_1, Player_2, player_1_Code, player_2_Code, Player_1_Password, Player_2_Password
         
-        # Verifica se a senha digitada é igual à senha do jogador 1 no DataFrame users
-        elif password.value != str(users.loc[users["nome_completo"] == Player_1.value, "senha"].values[0]):
-            password.error = True # Ativar o designe de erro do campo de senha
-            password.error_text = "Senha incorreta" # Define o texto de erro do campo de senha
-            Player_1.value = "Player 1" # Reseta o valor do campo de seleção do jogador 1 para "Player 1"
-            
-            player_1_Code = False # Define o código do jogador 1 como falso, indicando que ele ainda não está definido corretamente
-        
-        else:
-            player_1_Code = True # Define o código do jogador 1 como verdadeiro, indicando que ele está definido corretamente
-            
-            page.close(alertDialog) # Fecha o diálogo de confirmação de senha
-            
-            # Cria um novo diálogo de alerta para informar que a senha está correta
-            alertDialog = ft.AlertDialog(
-                title = ft.Text("Senha Correta!"), # Define o título do diálogo de alerta
-                content = ft.Text("Jogador 1 Já está definido!"), # Define o conteúdo do diálogo de alerta
-                actions = [
-                    ft.TextButton("Fechar", on_click=lambda e: page.close(alertDialog)) # Define o botão de ação do diálogo de alerta para fechar o diálogo
-                ]
-            )
-            
-            page.open(alertDialog) # Abre o diálogo de alerta para informar que a senha está correta
-        
-        password.update() # Atualiza o campo de senha para refletir as mudanças feitas independente do que aconteceu
-    
-    
-    def change_player_1() -> None:
-        '''Função usada para mudar o jogador 1. Esta função tira a opção de escolha do jogador escolhido na opção de escolha do player 2'''
-        
-        '''A palavra-chave nonlocal é usada para indicar que uma variável definida em um escopo externo (mas não global) será modificada dentro de uma função interna.'''
-        nonlocal Player_1, Player_2, users, player_2_Code
+        player_1_Code = False # Reseta o código do jogador 1
+        player_2_Code = False # Reseta o código do jogador 2
+        Player_1 = database.loc[database["id"] == int(chosen_players.value), "nome_completo"].values[0]
+        Player_2 = database.loc[database["id"] == int(chosen_players.value), "nome_completo"].values[1]
         
         
-        player_2_Code = False # Reseta o código do jogador 2 para falso, indicando que ele ainda não está definido corretamente
-        
-        # Verifica se o jogador 1 selecionado é diferente de "Player 1"
-        if Player_2.value != "Player 2":
-            # Cria um diálogo de alerta para solicitar a senha do jogador 2
-            alertDialog = ft.AlertDialog(
-                title = ft.Text("Digite a senha da conta!"), # Define o título do diálogo de alerta
-                content = ft.Text("Digite a senha cadastrada ao criar sua conta no aplicativo. Caso tenha esquecido, entre em contato com o responsável pelo APP."), # Define o conteúdo do diálogo de alerta
-                # Define as ações do diálogo de alerta, que incluem um campo de senha e um botão de confirmação
-                actions = [
-                    password := ft.TextField( # Cria um campo de senha
-                        label = "Confirme sua senha: ", # Define o rótulo do campo de senha
-                        hint_text = "Digite sua senha", # Define o texto de dica do campo de senha
-                        max_length = 100, # Define o comprimento máximo do campo de senha
-                        prefix_icon = ft.Icons.LOCK, # Define o ícone prefixo do campo de senha
-                        keyboard_type = ft.KeyboardType.VISIBLE_PASSWORD, # Define o tipo de teclado do campo de senha
-                        color = ft.Colors.ON_SURFACE_VARIANT, # Define a cor do texto do campo de senha
-                        password = True, # Define o campo como um campo de senha
-                        can_reveal_password = True, # Permite revelar a senha digitada
-                        width = 400, # Define a largura do campo de senha
-                        border = ft.InputBorder.UNDERLINE, # Define a borda do campo de senha como sublinhado
-                        input_filter = ft.InputFilter( # Define o filtro de entrada do campo de senha
-                            regex_string = r'^[a-zA-Z0-9_@$!%*?&#]*$', # Define a expressão regular para filtrar a entrada
-                            allow = False, # Define se a entrada é permitida ou não
-                        ),
-                        on_submit = lambda e: confirme_Player_2(password, alertDialog) # Define a ação a ser executada quando o usuário submeter o campo de senha
-                    ),
-                    
-                    ft.FloatingActionButton( # Cria um botão flutuante para confirmar a senha
-                        content = ft.Text("Confirmar Senha", color = ft.Colors.WHITE, weight = 'bold', size = 20), # Define o conteúdo do botão
-                        bgcolor = ft.Colors.BLUE, # Define a cor de fundo do botão
-                        width = 240, # Define a largura do botão
-                        height = 40, # Define a altura do botão
-                        on_click = lambda e: confirme_Player_2(password, alertDialog) # Define a ação a ser executada quando o botão for clicado
+        alert = ft.AlertDialog(
+            title = ft.Text("Senha dos Atletas!"), # Título do diálogo de alerta
+            content = ft.Text(f"Digite a senha dos atletas {Player_1} e {Player_2} para continuar!"), # Conteúdo do diálogo de alerta
+            scrollable = True,
+            actions=[
+                
+                Player_1_Password := ft.TextField(
+                    label = f'Senha do {Player_1}',
+                    hint_text = f'Digite a senha do {Player_1}', # Texto de dica do campo de senha
+                    password = True, # Define o campo como senha
+                    can_reveal_password= True, # Permite revelar a senha
+                    max_length = 100,
+                    prefix_icon = ft.Icons.LOCK_OUTLINE,
+                    keyboard_type = ft.KeyboardType.VISIBLE_PASSWORD,
+                    border = ft.InputBorder.UNDERLINE,
+                    input_filter = ft.InputFilter(
+                        regex_string = r'^[a-zA-Z0-9_@$!%*?&#]*$',
+                        allow = False
                     )
-                ],
-                actions_alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Define o alinhamento das ações do diálogo de alerta
-            )
-            
-            page.open(alertDialog) # Abre o diálogo de alerta para solicitar a senha do jogador 2
-        
-        # Se o jogador 1 selecionado for "Player 1", não é necessário solicitar a senha
-        else:
-            player_2_Code = True # Define o código do jogador 2 como verdadeiro, indicando que ele está definido corretamente
-        
-        # Atualiza as opções do jogador 2 para excluir o jogador 1 selecionado
-        Player_1.options = [ft.dropdown.Option("Player 1")] + [ft.dropdown.Option(user) for user in users["nome_completo"] if Player_2.value != user]
-        page.update() # Atualiza a página para refletir as mudanças feitas
-        
-    
-    def change_player_2() -> None:
-        '''Função usada para mudar o jogador 2. Esta função tira a opção de escolha do jogador escolhido na opção de escolha do player 1'''
-        
-        # A palavra-chave nonlocal é usada para indicar que uma variável definida em um escopo externo (mas não global) será modificada dentro de uma função interna.
-        nonlocal Player_1, player_1_Code, Player_2, users
-        
-        
-        player_1_Code = False # Reseta o código do jogador 1 para falso, indicando que ele ainda não está definido corretamente
-        
-        # Verifica se o jogador 1 selecionado é diferente de "Player 1"
-        if Player_1.value != "Player 1":
-            alertDialog = ft.AlertDialog(
-                title = ft.Text("Digite a senha da conta!"), # Define o título do diálogo de alerta
-                content = ft.Text("Digite a senha cadastrada ao criar sua conta no aplicativo. Caso tenha esquecido, entre em contato com o responsável pelo APP."), # Define o conteúdo do diálogo de alerta
-                # Define as ações do diálogo de alerta, que incluem um campo de senha e um botão de confirmação
-                actions = [
-                    password := ft.TextField( # Cria um campo de senha
-                        label = "Confirme sua senha: ", # Define o rótulo do campo de senha
-                        hint_text = "Digite sua senha", # Define o texto de dica do campo de senha
-                        max_length = 100, # Define o comprimento máximo do campo de senha
-                        prefix_icon = ft.Icons.LOCK, # Define o ícone prefixo do campo de senha
-                        keyboard_type = ft.KeyboardType.VISIBLE_PASSWORD, # Define o tipo de teclado do campo de senha
-                        color = ft.Colors.ON_SURFACE_VARIANT, # Define a cor do texto do campo de senha
-                        password = True, # Define o campo como um campo de senha
-                        can_reveal_password = True, # Permite revelar a senha digitada
-                        width = 400, # Define a largura do campo de senha
-                        border = ft.InputBorder.UNDERLINE, # Define a borda do campo de senha como sublinhado
-                        input_filter = ft.InputFilter( # Define o filtro de entrada do campo de senha
-                            regex_string = r'^[a-zA-Z0-9_@$!%*?&#]*$', # Define a expressão regular para filtrar a entrada
-                            allow = False # Define se a entrada é permitida ou não
-                        ),
-                        on_submit = lambda e: confirme_Player_1(password, alertDialog) # Define a ação a ser executada quando o usuário submeter o campo de senha
+                ),
+                
+                Player_2_Password := ft.TextField(
+                    label = f'Senha do {Player_2}',
+                    hint_text = f'Digite a senha do {Player_2}', # Texto de dica do campo de senha
+                    password = True, # Define o campo como senha
+                    can_reveal_password= True, # Permite revelar a senha
+                    max_length = 100,
+                    prefix_icon = ft.Icons.LOCK_OUTLINE,
+                    keyboard_type = ft.KeyboardType.VISIBLE_PASSWORD,
+                    border = ft.InputBorder.UNDERLINE,
+                    input_filter = ft.InputFilter(
+                        regex_string = r'^[a-zA-Z0-9_@$!%*?&#]*$',
+                        allow = False
                     ),
+                    on_submit = lambda e: password_Confirmation(database, alert) # Ação do campo de senha para confirmar as senhas dos atletas
+                ),
+                
+                ft.FloatingActionButton(
+                    content = ft.Text("Confirmar", size = 20, weight = 'bold', color = ft.Colors.WHITE), # Texto do botão de confirmação
+                    icon = ft.Icons.CHECK, # Ícone do botão de confirmação
+                    bgcolor = ft.Colors.GREEN, # Cor de fundo do botão de confirmação
+                    expand = True,
+                    height = 50,
+                    width = 200,
+                    on_click = lambda e: password_Confirmation(database, alert)
+                )
+            ],
+            actions_alignment = ft.MainAxisAlignment.CENTER # Alinhamento das ações do diálogo de alerta
+        )
+        
+        page.open(alert) # Abre o diálogo de alerta para solicitar as senhas dos atletas
 
-                    # Cria um botão flutuante para confirmar a senha
-                    ft.FloatingActionButton(
-                        content = ft.Text("Confirmar Senha", color = ft.Colors.WHITE, weight = 'bold', size = 20), # Define o conteúdo do botão
-                        bgcolor = ft.Colors.BLUE, # Define a cor de fundo do botão
-                        width = 240, # Define a largura do botão
-                        height = 40, # Define a altura do botão
-                        on_click = lambda e: confirme_Player_1(password, alertDialog) # Define a ação a ser executada quando o botão for clicado
-                    )
-                ],
-                actions_alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Define o alinhamento das ações do diálogo de alerta
-            )
-            page.open(alertDialog) # Abre o diálogo de alerta para solicitar a senha do jogador 1
+
+
+    def Choice_match() -> None:
+        nonlocal right_screen, chosen_players, Points_To_Win, Sets
         
-        # Se o jogador 1 selecionado for "Player 1", não é necessário solicitar a senha
-        else:
-            player_1_Code = True # Define o código do jogador 1 como verdadeiro, indicando que ele está definido corretamente
+        Points_To_Win = tournaments.loc[tournaments['id'] == int(chosen_tournament.value), 'ponto'].values[0] # Obtém os pontos necessários para vencer a partida do torneio selecionado
+        Sets = tournaments.loc[tournaments['id'] == int(chosen_tournament.value), 'set'].values[0] # Obtém o número de sets necessários para vencer a partida do torneio selecionado
         
-        # Verifica se a opção de escolha do jogador 1 é diferente de da escolha do jogador Player 1
-        Player_2.options = [ft.dropdown.Option("Player 2")] + [ft.dropdown.Option(user) for user in users["nome_completo"] if Player_1.value != user]
-        page.update() # Atualiza a página para refletir as mudanças feitas
+        
+        matchs = DataBase().get_DataBase(
+            'select p.*,' +
+            '\nconcat(a.nome, \' \', a.sobrenome) as nome_completo,' +
+            '\na.senha as senha' +
+            '\nfrom atleta_partida ap' +
+            '\ninner join partida p on p.id = ap.id_partida' +
+            '\ninner join atleta a on a.id = ap.id_atleta' +
+            f'\nwhere p.id_torneio = {chosen_tournament.value} and p.set = 0;'
+        )
+        
+        right_screen.content.controls.clear() # Limpa os controles da tela direita antes de adicionar novos
+        
+        right_screen.content.controls.append(chosen_tournament)
+        
+        chosen_players = ft.Dropdown(
+            label= 'Escolha a Partida', # Rótulo do dropdown
+            hint_text= 'Selecione a partida', # Texto de dica do dropdown
+            options=[
+                ft.dropdown.Option(key, f'{matchs.loc[matchs["id"] == int(key), "nome_completo"].values[0]} VS {matchs.loc[matchs["id"] == key, "nome_completo"].values[1]}') # Cria uma opção para cada partida obtida do banco de dados
+                
+                for key in matchs['id'][matchs['id'].duplicated()].tolist() # Itera sobre os dados das partidas obtidos do banco de dados
+            ],
+            editable= True, # Permite edição do dropdown
+            enable_filter = True, # Habilita o filtro do dropdown
+            menu_height = 300,
+            width = 340,
+            on_change = lambda e: set_Players(matchs) if e.control.value else None, # Ação do dropdown para escolher a partida
+        )
+        
+        right_screen.content.controls.append(chosen_players)
+        
+        right_screen.content.controls.append(
+            ft.FloatingActionButton(
+                content = ft.Text("Cadastrar", color = ft.Colors.WHITE, weight = 'bold', size = 20),
+                bgcolor = ft.Colors.BLUE,
+                width = 340,
+                height = 40,
+                on_click = lambda e: go_To_Game()
+            )    
+        )
+        
+        right_screen.content.update()
+    
     
     
     def update_layout() -> None:
@@ -402,7 +360,7 @@ def main(page: ft.Page):
                                             alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Alinhamento dos botões na linha
                                         ),
                                         
-                                        game(page, Player_1.value, Player_2.value, Points_To_Win.value, Sets.value) # Chama a função game para iniciar o jogo com os jogadores selecionados e as configurações definidas
+                                        game(page, Player_1, Player_2, str(Points_To_Win), str(Sets), str(chosen_tournament.value), str(chosen_players.value)) # Chama a função game para iniciar o jogo com os jogadores selecionados e as configurações definidas
                                     ],
                                     horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
                                     alignment = ft.MainAxisAlignment.SPACE_BETWEEN, # Alinhamento vertical da coluna
@@ -423,12 +381,6 @@ def main(page: ft.Page):
                     order by nome asc;
                     '''.replace('  ', '')
                 ) # Obtém os dados dos atletas do banco de dados
-                
-                # Atualiza as opções dos jogadores 1 e 2 com os usuários disponíveis
-                Player_1.options = [ft.dropdown.Option("Player 1")] + [ft.dropdown.Option(user) for user in users["nome_completo"].values if Player_2.value != user]
-                
-                # Atualiza as opções do jogador 2 com os usuários disponíveis, excluindo o jogador 1 selecionado
-                Player_2.options = [ft.dropdown.Option("Player 2")] + [ft.dropdown.Option(user) for user in users["nome_completo"].values if Player_1.value != user]
 
         # Verifica se a página de ranking detalhado está ativa
         elif page_RankingDetalhado:
@@ -443,6 +395,7 @@ def main(page: ft.Page):
 
 
     if dataBase.verify_connection():
+        
         # Conteúdo a esquerda do App
         left_screen = ft.Container(
             content = ft.Column(
@@ -543,148 +496,32 @@ def main(page: ft.Page):
         ) # Obtém os dados dos atletas do banco de dados
         
         
+        tournaments = DataBase().get_DataBase('select * from torneio order by id asc;') # Obtém os dados dos torneios do banco de dados
+        
+        
         # Tela direita do App com os controles de seleção de jogadores e configurações da partida
         right_screen = ft.Container(
             content = ft.Column(
                 controls = [
-                    ft.Row(
-                        controls = [
-                            ft.Column(
-                                controls = [
-                                    ft.Column(
-                                        controls = [
-                                            ft.Column(
-                                                controls = [
-                                                    ft.Text(
-                                                        "Escolha o primeiro jogador abaixo:", # Texto de instrução para escolher o primeiro jogador
-                                                        size = 15 # Tamanho do texto
-                                                    ),
-                                                    
-                                                    # Dropdown para selecionar o primeiro jogador
-                                                    Player_1 := ft.Dropdown(
-                                                        value = "Player 1", # Valor inicial do dropdown
-                                                        # Opções do dropdown, começando com "Player 1"
-                                                        options = [ 
-                                                            ft.dropdown.Option("Player 1")
-                                                        ] + [ft.dropdown.Option(user) for user in users["nome_completo"].values],
-                                                        menu_height = 300, # Altura do menu do dropdown
-                                                        color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                        fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                        text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                        on_change = lambda e: change_player_2(), # 
-                                                        width = 400, # Largura do dropdown
-                                                        enable_filter = True, # Permite filtrar as opções do dropdown
-                                                        editable = True # Permite editar o valor do dropdown
-                                                    )
-                                                ]
-                                            ),
-                                            
-                                            ft.Column(
-                                                controls = [
-                                                    # Texto de instrução para escolher o segundo jogador
-                                                    ft.Text(
-                                                        "Escolha o segundo jogador abaixo:", # Texto de instrução para escolher o segundo jogador
-                                                        size = 15 # Tamanho do texto
-                                                    ),
-                                                    
-                                                    # Dropdown para selecionar o segundo jogador
-                                                    Player_2 := ft.Dropdown(
-                                                        value = "Player 2", # Valor inicial do dropdown
-                                                        # Opções do dropdown, começando com "Player 2"
-                                                        options = [
-                                                            ft.dropdown.Option("Player 2")
-                                                        ] + [ft.dropdown.Option(user) for user in users["nome_completo"].values],
-                                                        
-                                                        menu_height = 300, # Altura do menu do dropdown
-                                                        color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                        fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                        text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                        on_change = lambda e: change_player_1(), # Ação a ser executada quando o valor do dropdown mudar
-                                                        width = 400, # Largura do dropdown
-                                                        enable_filter = True, # Permite filtrar as opções do dropdown
-                                                        editable = True # Permite editar o valor do dropdown
-                                                    )
-                                                ]
-                                            )
-                                        ],
-
-                                        alignment = ft.MainAxisAlignment.CENTER, # Alinhamento dos controles na coluna
-                                        spacing = 50 # Espaçamento entre os controles na coluna
-                                    )
-                                ],
-                                horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da coluna
-                                spacing = 30 # Espaçamento entre os controles na coluna
-                            ),
-
-
-                            ft.Column(
-                                controls = [
-                                    ft.Column(
-                                        controls = [
-                                            # Texto de instrução para escolher os pontos necessários para vencer um set
-                                            ft.Text(
-                                                "Pontos por sets:", # Texto de instrução para escolher os pontos necessários para vencer um set
-                                                size = 15 # Tamanho do texto
-                                            ),
-                                            
-                                            # Dropdown para selecionar os pontos necessários para vencer um set
-                                            Points_To_Win := ft.Dropdown(
-                                                value = '11', # Valor inicial do dropdown
-                                                # Opções do dropdown para os pontos necessários para vencer um set
-                                                options = [ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(11), ft.dropdown.Option(21)],
-                                                color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                width = 200 # Largura do dropdown
-                                            )
-                                        ],
-                                        horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                        alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
-                                    ),
-                                    
-                                    
-                                    ft.Column(
-                                        controls = [
-                                            # Texto de instrução para escolher a quantidade de sets
-                                            ft.Text(
-                                                "Quantidade de sets:", # Texto de instrução para escolher a quantidade de sets
-                                                size = 15 # Tamanho do texto
-                                            ),
-                                            
-                                            # Dropdown para selecionar a quantidade de sets
-                                            Sets := ft.Dropdown(
-                                                value = '3', # Valor inicial do dropdown
-                                                # Opções do dropdown para a quantidade de sets
-                                                options = [ft.dropdown.Option(1), ft.dropdown.Option(3), ft.dropdown.Option(5), ft.dropdown.Option(7), ft.dropdown.Option(9)],
-                                                color = ft.Colors.ON_SURFACE_VARIANT, # Cor do texto do dropdown
-                                                fill_color = ft.Colors.ON_SURFACE_VARIANT, # Cor de preenchimento do dropdown
-                                                text_style = ft.TextStyle(color = ft.Colors.BLACK, size = 17, weight = 'bold'), # Estilo do texto do dropdown
-                                                width = 200 # Largura do dropdown
-                                            )
-                                        ],
-                                        horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                        alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
-                                    )
-                                ],
-
-                                horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
-                                alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical da coluna
-                            )
+                    chosen_tournament := ft.Dropdown( # Dropdown para escolher o torneio
+                        label = "Escolha o Torneio", # Rótulo do dropdown
+                        hint_text = "Selecione o torneio", # Texto de dica do dropdown
+                        options = [
+                            ft.dropdown.Option(key, tournament) # Cria uma opção para cada torneio obtido do banco de dados
+                            
+                            for key, tournament in tournaments[['id', 'nome']].values.tolist() # Itera sobre os torneios obtidos do banco de dados
                         ],
-                        alignment = ft.MainAxisAlignment.CENTER, # Alinhamento vertical da linha
-                        spacing = 150 # Espaçamento entre os controles na linha
+                        editable = True,
+                        enable_filter = True,
+                        menu_height = 300,
+                        width = 340,
+                        on_change = lambda e: Choice_match() if e.control.value else None # Ação do dropdown para escolher o torneio
                     ),
                     
-                    
-                    # Botão flutuante para iniciar a partida
-                    ft.FloatingActionButton(
-                        content = ft.Text("Iniciar Partida", size = 20, color = ft.Colors.WHITE), # Conteúdo do botão flutuante
-                        icon = ft.Icons.PLAY_ARROW, # Ícone do botão flutuante
-                        width = 400, # Largura do botão flutuante
-                        height = 50, # Altura do botão flutuante
-                        bgcolor = ft.Colors.GREEN, # Cor de fundo do botão flutuante
-                        on_click = lambda e: go_To_Game() # Ação do botão flutuante para iniciar a partida
+                    chosen_players := ft.Dropdown(
+                        label= 'Escolha a Partida', # Rótulo do dropdown
+                        hint_text= 'Selecione a partida', # Texto de dica do dropdown
+                        width = 340
                     )
                 ],
                 horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna

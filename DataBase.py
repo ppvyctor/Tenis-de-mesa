@@ -34,6 +34,18 @@ class DataBase: # Classe para manipulação do DataBase
             self.conection = False
 
 
+    def update_Player(self, command: str) -> None:
+        conn = self.engine.raw_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(command)
+            conn.commit()
+                
+        finally:
+            conn.close()
+            cursor.close()
+
+
     def insert_Player(self, tabela_Name: str, Columns: str, datas: tuple) -> None:
         '''Insere um novo jogador no banco de dados.'''
 

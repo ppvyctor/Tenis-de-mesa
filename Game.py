@@ -1,12 +1,15 @@
 import flet as ft
 import pandas as pd
+from DataBase import DataBase # Importando a classe DataBase do arquivo DataBase.py
 
 def game(
     page: ft.Page,
     Player_1: str,
     Player_2: str,
     Points_To_Win: str,
-    Sets: str
+    Sets: str,
+    id_tournament: str,
+    id_match: str
 ):
     '''Função com todo o sistema de jogo, onde os jogadores podem somar pontos e sets.'''
     Container_Game = ft.Ref[ft.Container]() # Referência para o Container do jogo
@@ -96,34 +99,11 @@ def game(
 
             # Atualiza o ranking do usuário que venceu
             if Player_1 != 'Player 1':
-                try:
-                    users = pd.read_excel(r'Users/users.xlsx') # Tentando ler o arquivo de usuários
-                    
-                except:
-                    try:
-                        users = pd.read_excel(r'Users\\users.xlsx') # Tentando ler o arquivo de usuários com caminho alternativo
-                        
-                    except:
-                        try:
-                            # Cria um DataFrame vazio com as colunas necessárias
-                            users = pd.DataFrame(columns=['Username', 'Email', 'Password', 'Wins', 'Defeats', 'Scores'])
-                            users.to_excel(r'Users/users.xlsx', index=False)
-                        except:
-                            # Cria um DataFrame vazio com as colunas necessárias com caminho alternativo
-                            users = pd.DataFrame(columns=['Username', 'Email', 'Password', 'Wins', 'Defeats', 'Scores'])
-                            users.to_excel(r'Users\\users.xlsx', index=False)
-                
-                
-                users.loc[users['Username'] == Player_1, 'Wins'] += 1 # Incrementa as vitórias do Player 1
-                users.loc[users['Username'] == Player_1, 'Scores'] += 3 # Incrementa os pontos do Player 1
-                
-                if Player_2 != 'Player 2': users.loc[users['Username'] == Player_2, 'Defeats'] += 1
-                
-                try:
-                    users.to_excel(r'Users/users.xlsx', index=False) # Tentando salvar o DataFrame atualizado no arquivo de usuários
-                    
-                except:
-                    users.to_excel(r'Users\\users.xlsx', index=False) # Tentando salvar o DataFrame atualizado no arquivo de usuários com caminho alternativo
+                DataBase().update_Player(
+                    f'UPDATE partida set \"set\" = {set_Player1.value} where id = {id_match};' + # Atualiza o número de sets do Player 1 na partida
+                    '\n' +
+                    f'\n'
+                )
                 
         
         # Verifica se o Player 2 atingiu o número de sets necessários para vencer
