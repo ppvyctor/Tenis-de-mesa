@@ -9,7 +9,9 @@ def game(
     Points_To_Win: str,
     Sets: str,
     id_tournament: str,
-    id_match: str
+    id_match: str,
+    current_Fase: str,
+    
 ):
     '''Função com todo o sistema de jogo, onde os jogadores podem somar pontos e sets.'''
     Container_Game = ft.Ref[ft.Container]() # Referência para o Container do jogo
@@ -84,6 +86,54 @@ def game(
                     controls = [
                         # Texto de vitória do Player 1
                         ft.Text(
+                            'Processando informações, aguarde...', # Mensagem temporária enquanto processa as informações
+                            size = 40, # Tamanho do texto
+                            weight = 'bold', # Peso do texto
+                            color = ft.Colors.ON_SURFACE_VARIANT # Cor do texto Variante, para caso o tema mude.
+                        )
+                    ],
+                    
+                    horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal dos controles
+                    alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical dos controles
+                ),
+                expand = True # Expande o container para ocupar todo o espaço disponível
+            )
+            page.update()
+
+            # Atualiza o ranking do usuário que venceu
+            if Player_1 != 'Player 1':
+                database = DataBase() # Cria uma instância da classe DataBase
+                database.update_Player(
+                    f'UPDATE partida set \"set\" = {set_Player1.value} where id = {id_match};' + # Atualiza o número de sets do Player 1 na partida
+                    '\n' +
+                    f'\nUPDATE atleta_partida ap set \"set\" = {set_Player1.value} from atleta a where a.id = ap.id_atleta and ap.id_partida = {id_match} and concat(a.nome, \' \', a.sobrenome) = \'{Player_1}\';' +
+                    f'\nUPDATE atleta_partida ap set \"set\" = {set_Player2.value} from atleta a where a.id = ap.id_atleta and ap.id_partida = {id_match} and concat(a.nome, \' \', a.sobrenome) = \'{Player_2}\';'
+                )
+                
+                if current_Fase != 'Final':
+                    next_step = ['Round of 128', 'Round of 64', 'Round of 32', 'Round of 16', 'Quartas', 'Semifinais', 'Final'] # Lista das fases do torneio
+                    next_step = next_step[next_step.index(current_Fase) + 1] # Próxima fase do torneio 
+                    
+                    matchs = database.get_DataBase(f'select * from partida where id_torneio = {id_tournament} order by id asc;')
+                    id_player = database.get_DataBase(f'select * from atleta where concat(nome, \' \', sobrenome) = \'{Player_1}\';').loc[0, 'id'] # Obtém o ID do Player 1
+                    
+                    aux = matchs[matchs['fase'] == next_step].reset_index(drop = True) # Filtra as partidas da próxima fase
+                    
+                    prox_match = int(matchs.loc[matchs['id'] == int(id_match), 'proxima_fase'].values[0]) # Obtém a próxima partida
+                    
+                    id_next_match = aux.loc[prox_match - 1, 'id']
+                    
+                    database.insert_Player(
+                        'atleta_partida',
+                        '(id_partida, id_atleta, \"set\")',
+                        (int(id_next_match), int(id_player), 0)
+                    )
+            
+            Container_Game.current.content = ft.Container( # Container para exibir a mensagem de vitória do Player 1
+                content = ft.Column( # Coluna para organizar os controles
+                    controls = [
+                        # Texto de vitória do Player 1
+                        ft.Text(
                             "PARABÉNS " + Player_1 + ', VOCÊ GANHOU! 🎉🎉',
                             size = 40, # Tamanho do texto
                             weight = 'bold', # Peso do texto
@@ -96,22 +146,64 @@ def game(
                 ),
                 expand = True # Expande o container para ocupar todo o espaço disponível
             )
+            page.update() # Atualiza a página para refletir as mudanças no layout do jogo
+            
 
-            # Atualiza o ranking do usuário que venceu
-            if Player_1 != 'Player 1':
-                DataBase().update_Player(
-                    f'UPDATE partida set \"set\" = {set_Player1.value} where id = {id_match};' + # Atualiza o número de sets do Player 1 na partida
-                    '\n' +
-                    f'\n'
-                )
-                
-        
         # Verifica se o Player 2 atingiu o número de sets necessários para vencer
         elif set_Player2.value == Sets:
             Container_Game.current.content = ft.Container( # Container para exibir a mensagem de vitória do Player 2
                 content = ft.Column(
                     controls = [
                         # Texto de vitória do Player 2
+                        ft.Text(
+                            "Processando informações, aguarde...", # Mensagem temporária enquanto processa as informações',
+                            size = 40, # Tamanho do texto
+                            weight = 'bold', # Peso do texto
+                            color = ft.Colors.ON_SURFACE_VARIANT # Cor do texto Variante, para caso o tema mude.
+                        )
+                    ],
+                    
+                    horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal dos controles
+                    alignment = ft.MainAxisAlignment.CENTER # Alinhamento vertical dos controles
+                ),
+                expand = True # Expande o container para ocupar todo o espaço disponível
+            )
+            page.update()
+            
+            
+            # Atualiza o ranking do usuário que venceu
+            if Player_2 != 'Player 2':
+                database = DataBase() # Cria uma instância da classe DataBase
+                database.update_Player(
+                    f'UPDATE partida set \"set\" = {set_Player2.value} where id = {id_match};' + # Atualiza o número de sets do Player 1 na partida
+                    '\n' +
+                    f'\nUPDATE atleta_partida ap set \"set\" = {set_Player1.value} from atleta a where a.id = ap.id_atleta and ap.id_partida = {id_match} and concat(a.nome, \' \', a.sobrenome) = \'{Player_1}\';' +
+                    f'\nUPDATE atleta_partida ap set \"set\" = {set_Player2.value} from atleta a where a.id = ap.id_atleta and ap.id_partida = {id_match} and concat(a.nome, \' \', a.sobrenome) = \'{Player_2}\';'
+                )
+                
+                if current_Fase != 'Final':
+                    next_step = ['Round of 128', 'Round of 64', 'Round of 32', 'Round of 16', 'Quartas', 'Semifinais', 'Final'] # Lista das fases do torneio
+                    next_step = next_step[next_step.index(current_Fase) + 1] # Próxima fase do torneio 
+                    
+                    matchs = database.get_DataBase(f'select * from partida where id_torneio = {id_tournament} order by id asc;')
+                    id_player = database.get_DataBase(f'select * from atleta where concat(nome, \' \', sobrenome) = \'{Player_2}\';').loc[0, 'id'] # Obtém o ID do Player 1
+                    
+                    aux = matchs[matchs['fase'] == next_step].reset_index(drop=True) # Filtra as partidas da próxima fase
+                    
+                    prox_match = int(matchs.loc[matchs['id'] == int(id_match), 'proxima_fase'].values[0]) # Obtém a próxima partida
+                    
+                    id_next_match = aux.loc[prox_match - 1, 'id']
+                    
+                    database.insert_Player(
+                        'atleta_partida',
+                        '(id_partida, id_atleta, \"set\")',
+                        (int(id_next_match), int(id_player), 0)
+                    )
+            
+            Container_Game.current.content = ft.Container( # Container para exibir a mensagem de vitória do Player 1
+                content = ft.Column( # Coluna para organizar os controles
+                    controls = [
+                        # Texto de vitória do Player 1
                         ft.Text(
                             "PARABÉNS " + Player_2 + ', VOCÊ GANHOU! 🎉🎉',
                             size = 40, # Tamanho do texto
@@ -125,41 +217,6 @@ def game(
                 ),
                 expand = True # Expande o container para ocupar todo o espaço disponível
             )
-            
-            
-            # Atualiza o ranking do usuário que venceu
-            if Player_2 != 'Player 2':
-                try:
-                    users = pd.read_excel(r'Users/users.xlsx') # Tentando ler o arquivo de usuários
-                    
-                except:
-                    try:
-                        users = pd.read_excel(r'Users\\users.xlsx') # Tentando ler o arquivo de usuários com caminho alternativo
-                        
-                    except:
-                        try:
-                            # Cria um DataFrame vazio com as colunas necessárias
-                            users = pd.DataFrame(columns=['Username', 'Email', 'Password', 'Wins', 'Defeats', 'Scores'])
-                            users.to_excel(r'Users/users.xlsx', index=False)
-                        except:
-                            # Cria um DataFrame vazio com as colunas necessárias com caminho alternativo
-                            users = pd.DataFrame(columns=['Username', 'Email', 'Password', 'Wins', 'Defeats', 'Scores'])
-                            users.to_excel(r'Users\\users.xlsx', index=False)
-                
-                
-                users.loc[users['Username'] == Player_2, 'Wins'] += 1 # Incrementa as vitórias do Player 2
-                users.loc[users['Username'] == Player_2, 'Scores'] += 3 # Incrementa os pontos do Player 2
-                
-                if Player_1 != 'Player 1': users.loc[users['Username'] == Player_1, 'Defeats'] += 1 # Incrementa as derrotas do Player 1
-                
-                try:
-                    # Salva o DataFrame atualizado no arquivo de usuários
-                    users.to_excel(r'Users/users.xlsx', index=False)
-                    
-                except:
-                    # Salva o DataFrame atualizado no arquivo de usuários com caminho alternativo
-                    users.to_excel(r'Users\\users.xlsx', index=False)
-                    
                 
                 
             

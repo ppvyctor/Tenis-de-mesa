@@ -27,7 +27,7 @@ def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
             f'select * from partida where id_torneio = {tournament_Options.value} order by id asc;'
         )
         
-        
+        print(matchs.loc[0, 'fase'])
         steps = steps[steps.index(matchs.loc[0, 'fase']) :] # Obtém o índice da fase da primeira partida
         steps = [(30, 'Round of 128'), (140, 'Round of 64'), (360, 'Round of 32'), (800, 'Round of 16'), (1700, 'Quartas'), (3500, 'Semifinais'), (0, 'Final')]
         
@@ -70,13 +70,13 @@ def RankingDetalhado(page: ft.Page) -> ft.Column | ft.Container:
                                                 ft.Row(
                                                     controls = [
                                                         ft.Text(
-                                                            '   ' if matchs[matchs['id'] == key].empty else matchs.loc[matchs['id'] == key, 'nome_completo'].values[1],
+                                                            '   ' if matchs[matchs['id'] == key].empty or matchs[matchs['id'] == key].shape[0] < 2 else matchs.loc[matchs['id'] == key, 'nome_completo'].values[1],
                                                             size = 20,
                                                             color = ft.Colors.BLACK
                                                         ),
                                                         
                                                         ft.Text(
-                                                            '   ' if matchs[matchs['id'] == key].empty else matchs.loc[matchs['id'] == key, 'set'].values[1],
+                                                            '   ' if matchs[matchs['id'] == key].empty or matchs[matchs['id'] == key].shape[0] < 2 else matchs.loc[matchs['id'] == key, 'set'].values[1],
                                                             size = 20,
                                                             color = ft.Colors.BLACK
                                                         )

@@ -120,7 +120,7 @@ def main(page: ft.Page):
             Player_1_Password.error = True
             Player_1_Password.error_text = 'Senha não pode ser vazia!' # Verifica se a senha do jogador 1 está vazia
         
-        elif Player_1_Password.value != database.loc[database["id"] == int(chosen_players.value), "senha"].values[0]:
+        elif Player_1_Password.value != database.loc[database["id"] == int(chosen_Match.value), "senha"].values[0]:
             Player_1_Password.error = True
             Player_1_Password.error_text = 'Senha incorreta!' # Verifica se a senha do jogador 1 está incorreta
         
@@ -131,7 +131,7 @@ def main(page: ft.Page):
             Player_2_Password.error = True
             Player_2_Password.error_text = 'Senha não pode ser vazia!' # Verifica se a senha do jogador 2 está vazia
         
-        elif Player_2_Password.value != database.loc[database["id"] == int(chosen_players.value), "senha"].values[1]:
+        elif Player_2_Password.value != database.loc[database["id"] == int(chosen_Match.value), "senha"].values[1]:
             Player_2_Password.error = True
             Player_2_Password.error_text = 'Senha incorreta!' # Verifica se a senha do jogador 2 está incorreta
         
@@ -152,8 +152,8 @@ def main(page: ft.Page):
         
         player_1_Code = False # Reseta o código do jogador 1
         player_2_Code = False # Reseta o código do jogador 2
-        Player_1 = database.loc[database["id"] == int(chosen_players.value), "nome_completo"].values[0]
-        Player_2 = database.loc[database["id"] == int(chosen_players.value), "nome_completo"].values[1]
+        Player_1 = database.loc[database["id"] == int(chosen_Match.value), "nome_completo"].values[0]
+        Player_2 = database.loc[database["id"] == int(chosen_Match.value), "nome_completo"].values[1]
         
         
         alert = ft.AlertDialog(
@@ -211,7 +211,7 @@ def main(page: ft.Page):
 
 
     def Choice_match() -> None:
-        nonlocal right_screen, chosen_players, Points_To_Win, Sets
+        nonlocal right_screen, chosen_Match, Points_To_Win, Sets
         
         Points_To_Win = tournaments.loc[tournaments['id'] == int(chosen_tournament.value), 'ponto'].values[0] # Obtém os pontos necessários para vencer a partida do torneio selecionado
         Sets = tournaments.loc[tournaments['id'] == int(chosen_tournament.value), 'set'].values[0] # Obtém o número de sets necessários para vencer a partida do torneio selecionado
@@ -231,7 +231,7 @@ def main(page: ft.Page):
         
         right_screen.content.controls.append(chosen_tournament)
         
-        chosen_players = ft.Dropdown(
+        chosen_Match = ft.Dropdown(
             label= 'Escolha a Partida', # Rótulo do dropdown
             hint_text= 'Selecione a partida', # Texto de dica do dropdown
             options=[
@@ -246,11 +246,11 @@ def main(page: ft.Page):
             on_change = lambda e: set_Players(matchs) if e.control.value else None, # Ação do dropdown para escolher a partida
         )
         
-        right_screen.content.controls.append(chosen_players)
+        right_screen.content.controls.append(chosen_Match)
         
         right_screen.content.controls.append(
             ft.FloatingActionButton(
-                content = ft.Text("Cadastrar", color = ft.Colors.WHITE, weight = 'bold', size = 20),
+                content = ft.Text("Começar", color = ft.Colors.WHITE, weight = 'bold', size = 20),
                 bgcolor = ft.Colors.BLUE,
                 width = 340,
                 height = 40,
@@ -360,7 +360,12 @@ def main(page: ft.Page):
                                             alignment = ft.MainAxisAlignment.SPACE_BETWEEN # Alinhamento dos botões na linha
                                         ),
                                         
-                                        game(page, Player_1, Player_2, str(Points_To_Win), str(Sets), str(chosen_tournament.value), str(chosen_players.value)) # Chama a função game para iniciar o jogo com os jogadores selecionados e as configurações definidas
+                                        game(page, Player_1, Player_2, str(Points_To_Win), 
+                                             str(Sets), str(chosen_tournament.value), str(chosen_Match.value),
+                                             dataBase.get_DataBase(
+                                                 f'select fase from partida where id = {chosen_Match.value};' # Obtém a fase da partida selecionada
+                                             ).values[0][0] # Obtém o valor da fase da partida selecionada
+                                            ) # Chama a função game para iniciar o jogo com os jogadores selecionados e as configurações definidas
                                     ],
                                     horizontal_alignment = ft.CrossAxisAlignment.CENTER, # Alinhamento horizontal da coluna
                                     alignment = ft.MainAxisAlignment.SPACE_BETWEEN, # Alinhamento vertical da coluna
@@ -409,7 +414,7 @@ def main(page: ft.Page):
                                 height = 50, # Altura do botão de menu
                                 alignment = ft.alignment.center # Alinhamento do botão de menu
                             ),
-                            
+
                             # Botão de ir para a página inicial
                             ft.IconButton(
                                 tooltip = "Página Inicial", # Tooltip do botão de página inicial
@@ -420,7 +425,7 @@ def main(page: ft.Page):
                                 alignment = ft.alignment.center, # Alinhamento do botão de página inicial
                                 on_click = lambda e: go_To_Home() # Ação do botão para voltar à página inicial
                             ),
-                            
+
                             # Botão de ir para a página de ranking detalhado
                             ft.IconButton(
                                 tooltip = "Cadastrar", # Tooltip do botão de cadastro
@@ -430,17 +435,6 @@ def main(page: ft.Page):
                                 height = 50, # Altura do botão de cadastro
                                 alignment = ft.alignment.center, # Alinhamento do botão de cadastro
                                 on_click = lambda e: runSignup() # Ação do botão para ir para a página de cadastro de jogadores
-                            ),
-                            
-                            # Botão de remover jogador
-                            ft.IconButton(
-                                tooltip = "Remover Jogador",
-                                icon = ft.Icons.PERSON_REMOVE,
-                                icon_color = ft.Colors.ON_SURFACE_VARIANT, 
-                                icon_size = 35,
-                                height = 50,
-                                alignment = ft.alignment.center
-                                #on_click = lambda e: runSignup()
                             ),
 
                             # Botão de ir para a página de ranking detalhado
@@ -518,7 +512,7 @@ def main(page: ft.Page):
                         on_change = lambda e: Choice_match() if e.control.value else None # Ação do dropdown para escolher o torneio
                     ),
                     
-                    chosen_players := ft.Dropdown(
+                    chosen_Match := ft.Dropdown(
                         label= 'Escolha a Partida', # Rótulo do dropdown
                         hint_text= 'Selecione a partida', # Texto de dica do dropdown
                         width = 340
